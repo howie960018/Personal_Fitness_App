@@ -2,7 +2,7 @@
 //  DailyLogFormView.swift
 //  Howie's Fitness Log
 //
-//  每日數據記錄表單
+//  每日數據記錄表單 - 支援睡眠時數自動計算
 //
 
 import SwiftUI
@@ -17,8 +17,11 @@ struct DailyLogFormView: View {
     @State private var date = Date()
     @State private var weight: String = ""
     @State private var sleepDuration: String = ""
-    @State private var wakeUpTime = Date()
-    @State private var sleepTime = Date()
+    
+    // 預設起床時間 07:00, 睡覺時間 23:00 (為了方便選擇)
+    @State private var wakeUpTime = Calendar.current.date(bySettingHour: 7, minute: 0, second: 0, of: Date()) ?? Date()
+    @State private var sleepTime = Calendar.current.date(bySettingHour: 23, minute: 0, second: 0, of: Date()) ?? Date()
+    
     @State private var steps: String = ""
     @State private var restingHeartRate: String = ""
     
@@ -43,15 +46,24 @@ struct DailyLogFormView: View {
                 }
                 
                 Section("睡眠") {
+                    // MARK: - 修改 1: 加上 onChange 監聽時間變化
+                    DatePicker("睡覺時間", selection: $sleepTime, displayedComponents: .hourAndMinute)
+                        .onChange(of: sleepTime) { calculateSleepDuration() }
+                    
+                    DatePicker("起床時間", selection: $wakeUpTime, displayedComponents: .hourAndMinute)
+                        .onChange(of: wakeUpTime) { calculateSleepDuration() }
+                    
                     HStack {
-                        TextField("總睡眠時長", text: $sleepDuration)
+                        Text("總睡眠時長")
+                        Spacer()
+                        // 這裡依然允許手動修改，但通常會自動算好
+                        TextField("自動計算", text: $sleepDuration)
                             .keyboardType(.decimalPad)
+                            .multilineTextAlignment(.trailing)
+                            .frame(width: 80)
                         Text("小時")
                             .foregroundStyle(.secondary)
                     }
-                    
-                    DatePicker("起床時間", selection: $wakeUpTime, displayedComponents: .hourAndMinute)
-                    DatePicker("睡覺時間", selection: $sleepTime, displayedComponents: .hourAndMinute)
                 }
                 
                 Section("活動") {
@@ -92,6 +104,30 @@ struct DailyLogFormView: View {
         }
     }
     
+    // MARK: - 修改 2: 自動計算邏輯
+    private func calculateSleepDuration() {
+        let calendar = Calendar.current
+        
+        // 為了只比較「時間」，我們把日期都統一設為今天，避免 DatePicker 自帶的日期干擾
+        let now = Date()
+        let sleepComps = calendar.dateComponents([.hour, .minute], from: sleepTime)
+        let wakeComps = calendar.dateComponents([.hour, .minute], from: wakeUpTime)
+        
+        guard let sTime = calendar.date(bySettingHour: sleepComps.hour!, minute: sleepComps.minute!, second: 0, of: now),
+              let wTime = calendar.date(bySettingHour: wakeComps.hour!, minute: wakeComps.minute!, second: 0, of: now) else { return }
+        
+        // 計算差距 (秒)
+        var diff = wTime.timeIntervalSince(sTime)
+        
+        // 處理跨日：如果起床時間比睡覺時間早 (例如 07:00 < 23:00)，代表跨了一天，加 24 小時
+        if diff < 0 {
+            diff += 86400 // 24小時 * 60分 * 60秒
+        }
+        
+        let hours = diff / 3600
+        sleepDuration = String(format: "%.1f", hours)
+    }
+    
     private func loadExistingData() {
         if let log = existingLog {
             date = log.date
@@ -101,6 +137,9 @@ struct DailyLogFormView: View {
             if let st = log.sleepTime { sleepTime = st }
             if let s = log.steps { steps = String(s) }
             if let hr = log.restingHeartRate { restingHeartRate = String(hr) }
+        } else {
+            // 如果是新增模式，一進來就算一次預設值的時差
+            calculateSleepDuration()
         }
     }
     

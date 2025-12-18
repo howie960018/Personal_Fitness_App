@@ -18,12 +18,12 @@ final class NutritionEntry {
     var vegPortions: Double?
     var fatPortions: Double?
     
-    var note: String?
+    // 手動設定的熱量 (總熱量)
+    var manualCalories: Double?
     
-    // 修正：將實際儲存的屬性改為可選型，以避免舊資料讀取時崩潰
+    var note: String?
     var primitiveStatus: EntryStatus?
     
-    // 提供一個安全的存取介面，若為 nil 則回退至 .complete
     var status: EntryStatus {
         get { primitiveStatus ?? .complete }
         set { primitiveStatus = newValue }
@@ -38,6 +38,17 @@ final class NutritionEntry {
     }
     
     var estimatedCalories: Double {
+        // 1. 如果有手動存入的總熱量，最優先使用
+        if let manual = manualCalories {
+            return manual
+        }
+        
+        // 2. 如果單位本身就是「卡路里」，那 amount 就是熱量
+        if unit == .calorie {
+            return amount
+        }
+        
+        // 3. 手掌法則計算
         var total = 0.0
         if let protein = proteinPortions {
             total += MacroType.protein.estimatedCalories(portions: protein)
@@ -69,6 +80,7 @@ final class NutritionEntry {
         carbPortions: Double? = nil,
         vegPortions: Double? = nil,
         fatPortions: Double? = nil,
+        manualCalories: Double? = nil,
         note: String? = nil,
         status: EntryStatus = .complete
     ) {
@@ -82,7 +94,8 @@ final class NutritionEntry {
         self.carbPortions = carbPortions
         self.vegPortions = vegPortions
         self.fatPortions = fatPortions
+        self.manualCalories = manualCalories
         self.note = note
-        self.primitiveStatus = status // 賦值給原始屬性
+        self.primitiveStatus = status
     }
 }

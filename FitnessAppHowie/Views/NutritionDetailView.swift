@@ -2,7 +2,7 @@
 //  NutritionDetailView.swift
 //  FitHowie
 //
-//  飲食詳情視圖 - 支援手掌法則與編輯功能
+//  飲食詳情視圖 - 支援手掌法則與精確熱量計算顯示
 //
 
 import SwiftUI
@@ -37,8 +37,9 @@ struct NutritionDetailView: View {
                     
                     Divider()
                     
-                    // 3. 份量顯示邏輯 (對應新版手掌法則)
+                    // 3. 份量與熱量顯示邏輯
                     if entry.isHandPortionMode {
+                        // MARK: - A. 手掌法則模式
                         VStack(alignment: .leading, spacing: 12) {
                             Text("份量估算 (手掌法則)")
                                 .font(.caption)
@@ -72,8 +73,66 @@ struct NutritionDetailView: View {
                             .padding(.top, 5)
                         }
                     } else {
-                        // 傳統模式顯示
-                        DetailRow(label: "份量", value: String(format: "%.1f %@", entry.amount, entry.unit.rawValue))
+                        // MARK: - B. 精確計算模式 (單位熱量 x 份數)
+                        VStack(alignment: .leading, spacing: 12) {
+                            DetailRow(label: "份量", value: String(format: "%.1f %@", entry.amount, entry.unit.rawValue))
+                            
+                            // 顯示熱量計算公式
+                            if let totalCals = entry.manualCalories, entry.amount > 0 {
+                                Divider()
+                                
+                                VStack(alignment: .leading, spacing: 6) {
+                                    Text("熱量明細")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                    
+                                    // 反推單位熱量
+                                    let unitCals = totalCals / entry.amount
+                                    
+                                    HStack(alignment: .firstTextBaseline, spacing: 4) {
+                                        // 單位熱量
+                                        Text(String(format: "%.0f", unitCals))
+                                            .font(.body)
+                                            .monospacedDigit()
+                                        
+                                        Text("kcal/\(entry.unit == .serving ? "份" : "單位")")
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                        
+                                        // 乘號
+                                        Text("×")
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                            .padding(.horizontal, 2)
+                                        
+                                        // 份數
+                                        Text(String(format: "%g", entry.amount)) // %g 自動去除多餘的0
+                                            .font(.body)
+                                            .monospacedDigit()
+                                        
+                                        // 等號
+                                        Text("=")
+                                            .font(.body)
+                                            .foregroundStyle(.secondary)
+                                            .padding(.horizontal, 2)
+                                        
+                                        // 總熱量
+                                        Text("\(Int(totalCals))")
+                                            .font(.title3)
+                                            .bold()
+                                            .foregroundStyle(.blue)
+                                        
+                                        Text("kcal")
+                                            .font(.caption)
+                                            .foregroundStyle(.blue)
+                                            .bold()
+                                    }
+                                }
+                            } else {
+                                // 舊資料或無熱量時的 fallback
+                                DetailRow(label: "估算熱量", value: "\(Int(entry.estimatedCalories)) kcal")
+                            }
+                        }
                     }
                     
                     // 4. 備註
@@ -161,12 +220,11 @@ struct MacroDetailIcon: View {
 #Preview {
     let entry = NutritionEntry(
         mealType: "午餐",
-        entryDescription: "雞胸肉沙拉配糙米飯",
-        proteinPortions: 1.5,
-        carbPortions: 1.0,
-        vegPortions: 2.0,
-        fatPortions: 0.5,
-        note: "蛋白質充足"
+        entryDescription: "茶葉蛋",
+        amount: 2,
+        unit: .serving,
+        manualCalories: 140, // 模擬：70kcal * 2 = 140kcal
+        note: "補充蛋白質"
     )
     
     return NavigationStack {

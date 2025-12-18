@@ -2,7 +2,7 @@
 //  PendingNutritionView.swift
 //  FitHowie
 //
-//  待補完飲食記錄視圖 - 修正舊資料相容性
+//  待補完飲食記錄視圖 - 修正舊資料相容性與手動熱量支援
 //
 
 import SwiftUI
@@ -115,7 +115,8 @@ struct PendingEntryRow: View {
                 HStack {
                     Text(entry.mealType)
                         .font(.headline)
-                        .foregroundStyle(.orange)
+                        // MARK: - 修改：改為 primary (深色模式下為白色)
+                        .foregroundStyle(.primary)
                     
                     Spacer()
                     
@@ -151,6 +152,9 @@ struct CompletePendingEntryView: View {
     @State private var fatPortions: Double = 0.5
     @State private var note: String
     
+    // MARK: - 新增：暫存熱量變數
+    @State private var manualCalories: Double = 0.0
+    
     init(entry: NutritionEntry) {
         self.entry = entry
         _description = State(initialValue: entry.entryDescription == "待補完" ? "" : entry.entryDescription)
@@ -169,6 +173,9 @@ struct CompletePendingEntryView: View {
         if let fat = entry.fatPortions {
             _fatPortions = State(initialValue: fat)
         }
+        
+        // 初始化熱量（如果之前沒設定過，預設為0讓它自動算）
+        _manualCalories = State(initialValue: entry.manualCalories ?? 0.0)
     }
     
     var body: some View {
@@ -214,7 +221,8 @@ struct CompletePendingEntryView: View {
                         proteinPortions: $proteinPortions,
                         carbPortions: $carbPortions,
                         vegPortions: $vegPortions,
-                        fatPortions: $fatPortions
+                        fatPortions: $fatPortions,
+                        calories: $manualCalories // 傳入綁定
                     )
                 }
                 
@@ -248,6 +256,10 @@ struct CompletePendingEntryView: View {
         entry.vegPortions = vegPortions
         entry.fatPortions = fatPortions
         entry.note = note.isEmpty ? nil : note
+        
+        // MARK: - 寫入熱量
+        entry.manualCalories = manualCalories
+        
         // 修正：透過 status 計算屬性更新 primitiveStatus 並設為 complete
         entry.status = .complete
         entry.unit = .handPortion

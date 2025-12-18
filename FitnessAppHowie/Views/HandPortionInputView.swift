@@ -2,7 +2,7 @@
 //  HandPortionInputView.swift
 //  FitHowie
 //
-//  手掌法則輸入組件
+//  手掌法則輸入組件 - 支援手動修改熱量
 //
 
 import SwiftUI
@@ -14,6 +14,9 @@ struct HandPortionInputView: View {
     @Binding var vegPortions: Double
     @Binding var fatPortions: Double
     
+    // MARK: - 新增：綁定外部的熱量變數
+    @Binding var calories: Double
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
             HStack {
@@ -22,54 +25,81 @@ struct HandPortionInputView: View {
                 
                 Spacer()
                 
-                // 總卡路里預覽
-                let totalCals = calculateTotalCalories()
-                Text("約 \(Int(totalCals)) kcal")
-                    .font(.subheadline)
-                    .bold()
-                    .foregroundStyle(.blue)
+                // MARK: - 修改：改為可輸入的 TextField
+                HStack(spacing: 4) {
+                    Text("約")
+                        .foregroundStyle(.secondary)
+                    
+                    TextField("熱量", value: $calories, format: .number)
+                        .keyboardType(.decimalPad)
+                        .multilineTextAlignment(.trailing)
+                        .frame(width: 80)
+                        .padding(.vertical, 4)
+                        .padding(.horizontal, 8)
+                        .background(Color(.systemBackground))
+                        .cornerRadius(8)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(Color.blue.opacity(0.3), lineWidth: 1)
+                        )
+                    
+                    Text("kcal")
+                        .font(.subheadline)
+                        .bold()
+                        .foregroundStyle(.blue)
+                }
             }
             
-            Text("使用手掌法則快速估算")
+            Text("滑動調整份數，或直接點擊上方數字修改熱量")
                 .font(.caption)
                 .foregroundStyle(.secondary)
             
-            // 蛋白質
+            // 各個滑桿 (加入 onChange 來自動更新熱量)
             PortionSlider(
                 macroType: .protein,
                 value: $proteinPortions
             )
+            .onChange(of: proteinPortions) { updateCalories() }
             
-            // 碳水
             PortionSlider(
                 macroType: .carbs,
                 value: $carbPortions
             )
+            .onChange(of: carbPortions) { updateCalories() }
             
-            // 蔬菜
             PortionSlider(
                 macroType: .vegetables,
                 value: $vegPortions
             )
+            .onChange(of: vegPortions) { updateCalories() }
             
-            // 油脂
             PortionSlider(
                 macroType: .fats,
                 value: $fatPortions
             )
+            .onChange(of: fatPortions) { updateCalories() }
         }
         .padding()
         .background(Color(.secondarySystemBackground))
         .cornerRadius(12)
+        // 畫面載入時若為0則先算一次初始值
+        .onAppear {
+            if calories == 0 { updateCalories() }
+        }
     }
     
-    private func calculateTotalCalories() -> Double {
+    private func updateCalories() {
         var total = 0.0
         total += MacroType.protein.estimatedCalories(portions: proteinPortions)
         total += MacroType.carbs.estimatedCalories(portions: carbPortions)
         total += MacroType.vegetables.estimatedCalories(portions: vegPortions)
         total += MacroType.fats.estimatedCalories(portions: fatPortions)
-        return total
+        
+        // 當使用者移動滑桿時，重新計算並覆蓋手動輸入值
+        // 這是為了讓滑桿與數字保持連動
+        withAnimation {
+            calories = total
+        }
     }
 }
 
@@ -151,19 +181,5 @@ struct PortionSlider: View {
         case .vegetables: return .green
         case .fats: return .yellow
         }
-    }
-}
-
-// MARK: - Preview
-
-#Preview {
-    ScrollView {
-        HandPortionInputView(
-            proteinPortions: .constant(1.5),
-            carbPortions: .constant(2.0),
-            vegPortions: .constant(1.0),
-            fatPortions: .constant(0.5)
-        )
-        .padding()
     }
 }

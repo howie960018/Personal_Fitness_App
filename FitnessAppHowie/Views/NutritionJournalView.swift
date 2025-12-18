@@ -187,7 +187,8 @@ struct NutritionRowView: View {
                 HStack {
                     Text(entry.mealType)
                         .font(.headline)
-                        .foregroundStyle(.orange)
+                        // MARK: - 修改：改為 primary (深色模式下為白色)
+                        .foregroundStyle(.primary)
                     
                     Spacer()
                     
@@ -206,8 +207,7 @@ struct NutritionRowView: View {
                     
                     Spacer()
                     
-                    // 僅顯示總熱量估算 (作為一個簡單的參考指標)
-                    // 如果你連熱量都不想看，可以把下面這行刪除
+                    // 僅顯示總熱量估算
                     if entry.estimatedCalories > 0 {
                         Text("\(Int(entry.estimatedCalories)) kcal")
                             .font(.caption)
@@ -218,161 +218,5 @@ struct NutritionRowView: View {
             }
         }
         .padding(.vertical, 6) // 稍微增加一點垂直間距讓視覺更舒適
-    }
-}
-// MARK: - AddNutritionEntryView
-//
-//  AddNutritionEntryView.swift
-//  FitHowie
-//
-//  新增飲食視圖 - 支援日期選擇與手掌法則
-//
-
-import SwiftUI
-import SwiftData
-import PhotosUI
-
-struct AddNutritionEntryView: View {
-    @Environment(\.modelContext) private var modelContext
-    @Environment(\.dismiss) private var dismiss
-    
-    // MARK: - 新增：日期變數
-    @State private var date = Date()
-    
-    @State private var mealType = "午餐"
-    @State private var description = ""
-    @State private var note = ""
-    @State private var selectedPhoto: PhotosPickerItem?
-    @State private var photoData: Data?
-    @State private var useHandPortion = true
-    
-    @State private var proteinPortions: Double = 1.0
-    @State private var carbPortions: Double = 1.0
-    @State private var vegPortions: Double = 1.0
-    @State private var fatPortions: Double = 0.5
-    
-    @State private var amount = ""
-    @State private var selectedUnit: NutritionUnit = .serving
-    
-    let mealTypes = ["早餐", "午餐", "晚餐", "點心", "其他"]
-    
-    var body: some View {
-        NavigationStack {
-            Form {
-                // MARK: - 新增：日期選擇區塊
-                Section("日期與時間") {
-                    DatePicker("記錄時間", selection: $date, displayedComponents: [.date, .hourAndMinute])
-                }
-                
-                Section("餐別") {
-                    Picker("餐別", selection: $mealType) {
-                        ForEach(mealTypes, id: \.self) { Text($0).tag($0) }
-                    }
-                    .pickerStyle(.segmented)
-                }
-                
-                Section("食物照片") {
-                    PhotosPicker(selection: $selectedPhoto, matching: .images) {
-                        if let photoData, let uiImage = UIImage(data: photoData) {
-                            Image(uiImage: uiImage)
-                                .resizable()
-                                .scaledToFit()
-                                .frame(height: 200)
-                                .clipShape(RoundedRectangle(cornerRadius: 12))
-                        } else {
-                            VStack(spacing: 12) {
-                                Image(systemName: "camera.fill").font(.system(size: 50)).foregroundStyle(.blue)
-                                Text("拍攝食物").font(.headline)
-                                Text("點擊拍照或選擇相簿").font(.caption).foregroundStyle(.secondary)
-                            }
-                            .frame(height: 150).frame(maxWidth: .infinity)
-                            .background(Color(.secondarySystemBackground)).cornerRadius(12)
-                        }
-                    }
-                    .onChange(of: selectedPhoto) { _, newValue in
-                        Task {
-                            if let data = try? await newValue?.loadTransferable(type: Data.self) {
-                                photoData = data
-                            }
-                        }
-                    }
-                }
-                
-                Section {
-                    Button { quickSavePhoto() } label: {
-                        Label("只儲存照片，稍後補完", systemImage: "clock.badge.checkmark").frame(maxWidth: .infinity)
-                    }
-                    .disabled(photoData == nil)
-                }
-                
-                Section("內容") { TextField("食物描述", text: $description) }
-                
-                Section { Toggle("使用手掌法則估算", isOn: $useHandPortion) }
-                
-                if useHandPortion {
-                    Section {
-                        HandPortionInputView(
-                            proteinPortions: $proteinPortions,
-                            carbPortions: $carbPortions,
-                            vegPortions: $vegPortions,
-                            fatPortions: $fatPortions
-                        )
-                    }
-                } else {
-                    Section("份量") {
-                        HStack {
-                            TextField("份量", text: $amount).keyboardType(.decimalPad)
-                            Picker("單位", selection: $selectedUnit) {
-                                ForEach([NutritionUnit.serving, .weight, .calorie], id: \.self) { Text($0.rawValue).tag($0) }
-                            }
-                        }
-                    }
-                }
-                
-                Section("備註") { TextEditor(text: $note).frame(minHeight: 80) }
-            }
-            .navigationTitle("新增飲食")
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("取消") { dismiss() } }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("儲存") { saveEntry() }.disabled(!canSave)
-                }
-            }
-        }
-    }
-    
-    private var canSave: Bool {
-        useHandPortion ? (photoData != nil || !description.isEmpty) : (!description.isEmpty && Double(amount) != nil)
-    }
-    
-    private func quickSavePhoto() {
-        guard let photoData else { return }
-        let filename = "\(UUID().uuidString).jpg"
-        if let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {
-            try? photoData.write(to: documentsPath.appendingPathComponent(filename))
-            // MARK: - 修改：傳入 date
-            let entry = NutritionEntry(timestamp: date, mealType: mealType, entryDescription: "待補完", photoFilename: filename, status: .pending)
-            modelContext.insert(entry)
-            dismiss()
-        }
-    }
-    
-    private func saveEntry() {
-        var photoFilename: String?
-        if let photoData {
-            let filename = "\(UUID().uuidString).jpg"
-            if let path = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {
-                try? photoData.write(to: path.appendingPathComponent(filename))
-                photoFilename = filename
-            }
-        }
-        
-        // MARK: - 修改：傳入 date
-        let entry = useHandPortion ?
-            NutritionEntry(timestamp: date, mealType: mealType, entryDescription: description.isEmpty ? "外食記錄" : description, photoFilename: photoFilename, unit: .handPortion, proteinPortions: proteinPortions, carbPortions: carbPortions, vegPortions: vegPortions, fatPortions: fatPortions, note: note.isEmpty ? nil : note, status: .complete) :
-            NutritionEntry(timestamp: date, mealType: mealType, entryDescription: description, photoFilename: photoFilename, amount: Double(amount) ?? 0, unit: selectedUnit, note: note.isEmpty ? nil : note, status: .complete)
-        
-        modelContext.insert(entry)
-        dismiss()
     }
 }

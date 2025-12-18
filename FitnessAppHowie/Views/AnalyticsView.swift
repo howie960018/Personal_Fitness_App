@@ -160,7 +160,10 @@ struct AnalyticsView: View {
                             ForEach(MuscleGroup.allCases.filter { $0 != .other }, id: \.self) { muscle in
                                 HStack(spacing: 4) {
                                     RoundedRectangle(cornerRadius: 2).fill(colorForMuscle(muscle)).frame(width: 12, height: 12)
-                                    Text(muscle.rawValue).font(.caption)
+                                    // MARK: - 修改 1: 將圖例文字顏色改為灰色
+                                    Text(muscle.rawValue)
+                                        .font(.caption)
+                                        .foregroundStyle(.gray)
                                 }
                             }
                         }
@@ -471,7 +474,17 @@ struct VolumeTrendData: Identifiable { let id = UUID(); let date: Date; let musc
 // 訓練統計行
 struct StatRow: View {
     let icon: String; let label: String; let value: String; let color: Color
-    var body: some View { HStack { Image(systemName: icon).foregroundStyle(color).frame(width: 30); Text(label).foregroundStyle(.secondary); Spacer(); Text(value).fontWeight(.semibold).foregroundStyle(color) }.padding(.vertical, 4) }
+    var body: some View {
+        HStack {
+            // Icon 保持傳入的顏色 (color)
+            Image(systemName: icon).foregroundStyle(color).frame(width: 30);
+            Text(label).foregroundStyle(.secondary);
+            Spacer();
+            // MARK: - 修改 2: 數值統一顯示為藍色
+            Text(value).fontWeight(.semibold).foregroundStyle(.blue)
+        }
+        .padding(.vertical, 4)
+    }
 }
 
 // =========================================
