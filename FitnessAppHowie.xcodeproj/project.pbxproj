@@ -8,19 +8,58 @@
 
 /* Begin PBXBuildFile section */
 		955902912EF2F16D00082E39 /* FitnessAppHowieApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 955902902EF2F16D00082E39 /* FitnessAppHowieApp.swift */; };
-		955902932EF2F16D00082E39 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 955902922EF2F16D00082E39 /* ContentView.swift */; };
-		955902952EF2F16D00082E39 /* Item.swift in Sources */ = {isa = PBXBuildFile; fileRef = 955902942EF2F16D00082E39 /* Item.swift */; };
 		955902972EF2F16F00082E39 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 955902962EF2F16F00082E39 /* Assets.xcassets */; };
 		9559029A2EF2F16F00082E39 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 955902992EF2F16F00082E39 /* Preview Assets.xcassets */; };
+		955902A82EF2F2A800082E39 /* NutritionEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 955902A22EF2F2A800082E39 /* NutritionEntry.swift */; };
+		955902A92EF2F2A800082E39 /* WorkoutRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = 955902A32EF2F2A800082E39 /* WorkoutRecord.swift */; };
+		955902AA2EF2F2A800082E39 /* Enums.swift in Sources */ = {isa = PBXBuildFile; fileRef = 955902A42EF2F2A800082E39 /* Enums.swift */; };
+		955902AB2EF2F2A800082E39 /* DailyLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 955902A52EF2F2A800082E39 /* DailyLog.swift */; };
+		955902AC2EF2F2A800082E39 /* ExerciseSet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 955902A62EF2F2A800082E39 /* ExerciseSet.swift */; };
+		955902AD2EF2F2A800082E39 /* SetEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 955902A72EF2F2A800082E39 /* SetEntry.swift */; };
+		955902B72EF2F2C600082E39 /* NutritionDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 955902AE2EF2F2C600082E39 /* NutritionDetailView.swift */; };
+		955902B82EF2F2C600082E39 /* WorkoutLoggerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 955902AF2EF2F2C600082E39 /* WorkoutLoggerView.swift */; };
+		955902B92EF2F2C600082E39 /* WorkoutDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 955902B02EF2F2C600082E39 /* WorkoutDetailView.swift */; };
+		955902BA2EF2F2C600082E39 /* DailyLogFormView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 955902B12EF2F2C600082E39 /* DailyLogFormView.swift */; };
+		955902BB2EF2F2C600082E39 /* AnalyticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 955902B22EF2F2C600082E39 /* AnalyticsView.swift */; };
+		955902BC2EF2F2C600082E39 /* AddWorkoutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 955902B32EF2F2C600082E39 /* AddWorkoutView.swift */; };
+		955902BD2EF2F2C600082E39 /* NutritionJournalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 955902B42EF2F2C600082E39 /* NutritionJournalView.swift */; };
+		955902BE2EF2F2C600082E39 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 955902B52EF2F2C600082E39 /* ContentView.swift */; };
+		955902BF2EF2F2C600082E39 /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 955902B62EF2F2C600082E39 /* DashboardView.swift */; };
+		95BF58F82EF30E6900DB012F /* EditWorkoutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95BF58F72EF30E6900DB012F /* EditWorkoutView.swift */; };
+		95BF58FA2EF30F0200DB012F /* EditNutritionEntryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95BF58F92EF30F0200DB012F /* EditNutritionEntryView.swift */; };
+		95BF58FC2EF3AE3F00DB012F /* HandPortionInputView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95BF58FB2EF3AE3F00DB012F /* HandPortionInputView.swift */; };
+		95BF58FE2EF3B01200DB012F /* PendingNutritionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95BF58FD2EF3B01200DB012F /* PendingNutritionView.swift */; };
+		95BF59002EF3DBF500DB012F /* MediaHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95BF58FF2EF3DBF500DB012F /* MediaHelper.swift */; };
+		95BF59022EF3F44F00DB012F /* DailyHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95BF59012EF3F44F00DB012F /* DailyHistoryView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		9559028D2EF2F16D00082E39 /* FitnessAppHowie.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FitnessAppHowie.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		955902902EF2F16D00082E39 /* FitnessAppHowieApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FitnessAppHowieApp.swift; sourceTree = "<group>"; };
-		955902922EF2F16D00082E39 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
-		955902942EF2F16D00082E39 /* Item.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Item.swift; sourceTree = "<group>"; };
 		955902962EF2F16F00082E39 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		955902992EF2F16F00082E39 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
+		955902A22EF2F2A800082E39 /* NutritionEntry.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NutritionEntry.swift; sourceTree = "<group>"; };
+		955902A32EF2F2A800082E39 /* WorkoutRecord.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = WorkoutRecord.swift; sourceTree = "<group>"; };
+		955902A42EF2F2A800082E39 /* Enums.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Enums.swift; sourceTree = "<group>"; };
+		955902A52EF2F2A800082E39 /* DailyLog.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DailyLog.swift; sourceTree = "<group>"; };
+		955902A62EF2F2A800082E39 /* ExerciseSet.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ExerciseSet.swift; sourceTree = "<group>"; };
+		955902A72EF2F2A800082E39 /* SetEntry.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SetEntry.swift; sourceTree = "<group>"; };
+		955902AE2EF2F2C600082E39 /* NutritionDetailView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NutritionDetailView.swift; sourceTree = "<group>"; };
+		955902AF2EF2F2C600082E39 /* WorkoutLoggerView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = WorkoutLoggerView.swift; sourceTree = "<group>"; };
+		955902B02EF2F2C600082E39 /* WorkoutDetailView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = WorkoutDetailView.swift; sourceTree = "<group>"; };
+		955902B12EF2F2C600082E39 /* DailyLogFormView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DailyLogFormView.swift; sourceTree = "<group>"; };
+		955902B22EF2F2C600082E39 /* AnalyticsView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AnalyticsView.swift; sourceTree = "<group>"; };
+		955902B32EF2F2C600082E39 /* AddWorkoutView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AddWorkoutView.swift; sourceTree = "<group>"; };
+		955902B42EF2F2C600082E39 /* NutritionJournalView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NutritionJournalView.swift; sourceTree = "<group>"; };
+		955902B52EF2F2C600082E39 /* ContentView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		955902B62EF2F2C600082E39 /* DashboardView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
+		955902C02EF2FBDA00082E39 /* FitnessAppHowie.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = FitnessAppHowie.entitlements; sourceTree = "<group>"; };
+		95BF58F72EF30E6900DB012F /* EditWorkoutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditWorkoutView.swift; sourceTree = "<group>"; };
+		95BF58F92EF30F0200DB012F /* EditNutritionEntryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditNutritionEntryView.swift; sourceTree = "<group>"; };
+		95BF58FB2EF3AE3F00DB012F /* HandPortionInputView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HandPortionInputView.swift; sourceTree = "<group>"; };
+		95BF58FD2EF3B01200DB012F /* PendingNutritionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PendingNutritionView.swift; sourceTree = "<group>"; };
+		95BF58FF2EF3DBF500DB012F /* MediaHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaHelper.swift; sourceTree = "<group>"; };
+		95BF59012EF3F44F00DB012F /* DailyHistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyHistoryView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -53,9 +92,10 @@
 		9559028F2EF2F16D00082E39 /* FitnessAppHowie */ = {
 			isa = PBXGroup;
 			children = (
+				955902C02EF2FBDA00082E39 /* FitnessAppHowie.entitlements */,
+				955902A12EF2F23E00082E39 /* Views */,
+				955902A02EF2F23400082E39 /* Models */,
 				955902902EF2F16D00082E39 /* FitnessAppHowieApp.swift */,
-				955902922EF2F16D00082E39 /* ContentView.swift */,
-				955902942EF2F16D00082E39 /* Item.swift */,
 				955902962EF2F16F00082E39 /* Assets.xcassets */,
 				955902982EF2F16F00082E39 /* Preview Content */,
 			);
@@ -68,6 +108,41 @@
 				955902992EF2F16F00082E39 /* Preview Assets.xcassets */,
 			);
 			path = "Preview Content";
+			sourceTree = "<group>";
+		};
+		955902A02EF2F23400082E39 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				955902A52EF2F2A800082E39 /* DailyLog.swift */,
+				955902A42EF2F2A800082E39 /* Enums.swift */,
+				955902A62EF2F2A800082E39 /* ExerciseSet.swift */,
+				955902A22EF2F2A800082E39 /* NutritionEntry.swift */,
+				955902A72EF2F2A800082E39 /* SetEntry.swift */,
+				955902A32EF2F2A800082E39 /* WorkoutRecord.swift */,
+				95BF58FF2EF3DBF500DB012F /* MediaHelper.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		955902A12EF2F23E00082E39 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				955902B32EF2F2C600082E39 /* AddWorkoutView.swift */,
+				955902B22EF2F2C600082E39 /* AnalyticsView.swift */,
+				955902B52EF2F2C600082E39 /* ContentView.swift */,
+				955902B12EF2F2C600082E39 /* DailyLogFormView.swift */,
+				955902B62EF2F2C600082E39 /* DashboardView.swift */,
+				955902AE2EF2F2C600082E39 /* NutritionDetailView.swift */,
+				955902B42EF2F2C600082E39 /* NutritionJournalView.swift */,
+				955902B02EF2F2C600082E39 /* WorkoutDetailView.swift */,
+				955902AF2EF2F2C600082E39 /* WorkoutLoggerView.swift */,
+				95BF58F72EF30E6900DB012F /* EditWorkoutView.swift */,
+				95BF58F92EF30F0200DB012F /* EditNutritionEntryView.swift */,
+				95BF58FB2EF3AE3F00DB012F /* HandPortionInputView.swift */,
+				95BF58FD2EF3B01200DB012F /* PendingNutritionView.swift */,
+				95BF59012EF3F44F00DB012F /* DailyHistoryView.swift */,
+			);
+			path = Views;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -140,9 +215,28 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				955902932EF2F16D00082E39 /* ContentView.swift in Sources */,
-				955902952EF2F16D00082E39 /* Item.swift in Sources */,
+				955902AC2EF2F2A800082E39 /* ExerciseSet.swift in Sources */,
+				95BF58F82EF30E6900DB012F /* EditWorkoutView.swift in Sources */,
+				955902BF2EF2F2C600082E39 /* DashboardView.swift in Sources */,
+				95BF59002EF3DBF500DB012F /* MediaHelper.swift in Sources */,
+				955902B92EF2F2C600082E39 /* WorkoutDetailView.swift in Sources */,
 				955902912EF2F16D00082E39 /* FitnessAppHowieApp.swift in Sources */,
+				955902AD2EF2F2A800082E39 /* SetEntry.swift in Sources */,
+				95BF59022EF3F44F00DB012F /* DailyHistoryView.swift in Sources */,
+				955902A92EF2F2A800082E39 /* WorkoutRecord.swift in Sources */,
+				955902AB2EF2F2A800082E39 /* DailyLog.swift in Sources */,
+				95BF58FC2EF3AE3F00DB012F /* HandPortionInputView.swift in Sources */,
+				955902AA2EF2F2A800082E39 /* Enums.swift in Sources */,
+				955902BA2EF2F2C600082E39 /* DailyLogFormView.swift in Sources */,
+				955902B72EF2F2C600082E39 /* NutritionDetailView.swift in Sources */,
+				955902BB2EF2F2C600082E39 /* AnalyticsView.swift in Sources */,
+				95BF58FE2EF3B01200DB012F /* PendingNutritionView.swift in Sources */,
+				955902B82EF2F2C600082E39 /* WorkoutLoggerView.swift in Sources */,
+				955902BE2EF2F2C600082E39 /* ContentView.swift in Sources */,
+				955902BC2EF2F2C600082E39 /* AddWorkoutView.swift in Sources */,
+				955902A82EF2F2A800082E39 /* NutritionEntry.swift in Sources */,
+				95BF58FA2EF30F0200DB012F /* EditNutritionEntryView.swift in Sources */,
+				955902BD2EF2F2C600082E39 /* NutritionJournalView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -273,6 +367,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = FitnessAppHowie/FitnessAppHowie.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"FitnessAppHowie/Preview Content\"";
@@ -302,6 +397,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = FitnessAppHowie/FitnessAppHowie.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"FitnessAppHowie/Preview Content\"";

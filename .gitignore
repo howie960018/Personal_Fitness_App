@@ -1,0 +1,17 @@
+# Xcode
+.DS_Store
+*/build/
+*.derivedData
+*.xcuserstate
+project.xcworkspace/
+xcuserdata/
+
+# Swift Package Manager
+.build/
+
+# CocoaPods (如果有用)
+Pods/
+
+# 如果未來有敏感資訊，可以先寫在這裡預防
+Secrets.swift
+Config.xcconfig

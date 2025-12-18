@@ -1,32 +1,31 @@
-//
-//  FitnessAppHowieApp.swift
-//  FitnessAppHowie
-//
-//  Created by 曾浩儀 on 2025/12/17.
-//
-
 import SwiftUI
 import SwiftData
+import AVFoundation // 引入這個
 
 @main
 struct FitnessAppHowieApp: App {
-    var sharedModelContainer: ModelContainer = {
-        let schema = Schema([
-            Item.self,
-        ])
-        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
-
+    
+    // 加入這個 init
+    init() {
         do {
-            return try ModelContainer(for: schema, configurations: [modelConfiguration])
+            // 允許在靜音模式下播放聲音
+            try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default)
+            try AVAudioSession.sharedInstance().setActive(true)
         } catch {
-            fatalError("Could not create ModelContainer: \(error)")
+            print("無法設定 Audio Session: \(error)")
         }
-    }()
+    }
 
     var body: some Scene {
         WindowGroup {
             ContentView()
         }
-        .modelContainer(sharedModelContainer)
+        .modelContainer(for: [
+            DailyLog.self,
+            WorkoutRecord.self,
+            ExerciseSet.self,
+            SetEntry.self,
+            NutritionEntry.self
+        ])
     }
 }
