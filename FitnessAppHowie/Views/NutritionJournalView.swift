@@ -10,12 +10,10 @@ struct NutritionJournalView: View {
     @State private var showingPendingList = false
     @State private var entryToEdit: NutritionEntry?
     
-    // 修正：手動過濾並處理 nil 的舊資料
     private var pendingCount: Int {
         allEntries.filter { ($0.primitiveStatus ?? .complete) == .pending }.count
     }
     
-    // 修正：只顯示已完成的記錄，並處理舊資料相容性
     private var completedEntries: [NutritionEntry] {
         allEntries.filter { ($0.primitiveStatus ?? .complete) == .complete }
     }
@@ -51,7 +49,7 @@ struct NutritionJournalView: View {
                 }
             }
             .sheet(isPresented: $showingAddEntry) {
-                AddNutritionEntryView() // 確保此視圖在下方有定義
+                AddNutritionEntryView()
             }
             .sheet(isPresented: $showingPendingList) {
                 PendingNutritionView()
@@ -77,7 +75,7 @@ struct NutritionJournalView: View {
                 }
                 .buttonStyle(.borderedProminent)
                 
-                Text("提示：外食時可先拍照，稍後再補完份量")
+                Text("提示:外食時可先拍多張照片,稍後再補完份量")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
@@ -122,7 +120,7 @@ struct NutritionJournalView: View {
                 NavigationLink {
                     NutritionDetailView(entry: entry)
                 } label: {
-                    NutritionRowView(entry: entry) // 確保此視圖在下方有定義
+                    NutritionRowView(entry: entry)
                 }
                 .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                     Button(role: .destructive) {
@@ -143,36 +141,70 @@ struct NutritionJournalView: View {
     }
     
     private func deleteEntry(_ entry: NutritionEntry) {
-        if let filename = entry.photoFilename,
-           let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {
-            let filePath = documentsPath.appendingPathComponent(filename).path
-            try? FileManager.default.removeItem(atPath: filePath)
+        // 刪除所有關聯的照片檔案
+        if let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {
+            for filename in entry.photoFilenames {
+                let filePath = documentsPath.appendingPathComponent(filename).path
+                try? FileManager.default.removeItem(atPath: filePath)
+            }
+            
+            // 也刪除舊格式的照片(向下相容)
+            if let oldFilename = entry.photoFilename, !entry.photoFilenames.contains(oldFilename) {
+                let filePath = documentsPath.appendingPathComponent(oldFilename).path
+                try? FileManager.default.removeItem(atPath: filePath)
+            }
         }
+        
         modelContext.delete(entry)
     }
 }
 
-
-// MARK: - NutritionRowView (已簡化：只顯示縮圖與基本資訊)
+// MARK: - NutritionRowView (支援多張照片縮圖)
 
 struct NutritionRowView: View {
     let entry: NutritionEntry
     
     var body: some View {
         HStack(spacing: 12) {
-            // 1. 縮圖 (保持不變)
-            if let photoPath = entry.photoPath {
-                AsyncImage(url: URL(fileURLWithPath: photoPath)) { image in
-                    image
-                        .resizable()
-                        .scaledToFill()
-                } placeholder: {
-                    Color.gray.opacity(0.3)
+            // MARK: - 修改:支援多張照片縮圖顯示
+            if !entry.photoURLs.isEmpty {
+                if entry.photoURLs.count == 1 {
+                    // 單張照片:完整顯示
+                    AsyncImage(url: entry.photoURLs[0]) { image in
+                        image
+                            .resizable()
+                            .scaledToFill()
+                    } placeholder: {
+                        Color.gray.opacity(0.3)
+                    }
+                    .frame(width: 60, height: 60)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                } else {
+                    // 多張照片:顯示第一張 + 數量標記
+                    ZStack(alignment: .bottomTrailing) {
+                        AsyncImage(url: entry.photoURLs[0]) { image in
+                            image
+                                .resizable()
+                                .scaledToFill()
+                        } placeholder: {
+                            Color.gray.opacity(0.3)
+                        }
+                        .frame(width: 60, height: 60)
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                        
+                        // 照片數量標記
+                        Text("+\(entry.photoURLs.count - 1)")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 4)
+                            .padding(.vertical, 2)
+                            .background(Color.black.opacity(0.7))
+                            .clipShape(Capsule())
+                            .padding(3)
+                    }
                 }
-                .frame(width: 60, height: 60)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
             } else {
-                // 如果沒有照片，顯示一個簡單的佔位符
+                // 無照片佔位符
                 RoundedRectangle(cornerRadius: 8)
                     .fill(Color.gray.opacity(0.15))
                     .frame(width: 60, height: 60)
@@ -182,24 +214,21 @@ struct NutritionRowView: View {
                     }
             }
             
-            // 2. 文字資訊 (移除 MacroTag，只留總結)
+            // 文字資訊
             VStack(alignment: .leading, spacing: 4) {
                 HStack {
                     Text(entry.mealType)
                         .font(.headline)
-                        // MARK: - 修改：改為 primary (深色模式下為白色)
                         .foregroundStyle(.primary)
                     
                     Spacer()
                     
-                    // 顯示時間
                     Text(entry.timestamp, style: .time)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
                 
                 HStack {
-                    // 顯示描述 (例如：雞胸肉便當)
                     Text(entry.entryDescription.isEmpty ? "無描述" : entry.entryDescription)
                         .font(.subheadline)
                         .lineLimit(1)
@@ -207,7 +236,6 @@ struct NutritionRowView: View {
                     
                     Spacer()
                     
-                    // 僅顯示總熱量估算
                     if entry.estimatedCalories > 0 {
                         Text("\(Int(entry.estimatedCalories)) kcal")
                             .font(.caption)
@@ -217,6 +245,6 @@ struct NutritionRowView: View {
                 }
             }
         }
-        .padding(.vertical, 6) // 稍微增加一點垂直間距讓視覺更舒適
+        .padding(.vertical, 6)
     }
 }

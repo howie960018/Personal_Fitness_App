@@ -6,6 +6,12 @@ final class NutritionEntry {
     var timestamp: Date
     var mealType: String
     var entryDescription: String
+    
+    // MARK: - 修改：支援多張照片
+    var photoFilenames: [String] = [] // 改用陣列儲存多個檔名
+    
+    // 為了向下相容,保留舊欄位但標記為 deprecated
+    @available(*, deprecated, message: "請使用 photoFilenames")
     var photoFilename: String?
     
     // 基本記錄模式
@@ -29,12 +35,42 @@ final class NutritionEntry {
         set { primitiveStatus = newValue }
     }
     
+    // MARK: - 向下相容：取得第一張照片路徑
     var photoPath: String? {
+        // 優先使用新的多張照片陣列
+        if let firstFilename = photoFilenames.first {
+            guard let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
+                return nil
+            }
+            return documentsPath.appendingPathComponent(firstFilename).path
+        }
+        // 如果新陣列是空的,回退到舊欄位
         guard let filename = photoFilename else { return nil }
         guard let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
             return nil
         }
         return documentsPath.appendingPathComponent(filename).path
+    }
+    
+    // MARK: - 新增：取得所有照片的 URL
+    var photoURLs: [URL] {
+        guard let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
+            return []
+        }
+        
+        var urls: [URL] = []
+        
+        // 先加入新格式的照片
+        for filename in photoFilenames {
+            urls.append(documentsPath.appendingPathComponent(filename))
+        }
+        
+        // 如果有舊格式的照片且不在新陣列中,也加入
+        if let oldFilename = photoFilename, !photoFilenames.contains(oldFilename) {
+            urls.append(documentsPath.appendingPathComponent(oldFilename))
+        }
+        
+        return urls
     }
     
     var estimatedCalories: Double {
@@ -73,7 +109,8 @@ final class NutritionEntry {
         timestamp: Date = Date(),
         mealType: String,
         entryDescription: String,
-        photoFilename: String? = nil,
+        photoFilenames: [String] = [], // 新增：照片陣列
+        photoFilename: String? = nil,   // 保留舊參數以相容
         amount: Double = 0,
         unit: NutritionUnit = .handPortion,
         proteinPortions: Double? = nil,
@@ -87,6 +124,16 @@ final class NutritionEntry {
         self.timestamp = timestamp
         self.mealType = mealType
         self.entryDescription = entryDescription
+        
+        // 處理照片相容性
+        if !photoFilenames.isEmpty {
+            self.photoFilenames = photoFilenames
+        } else if let filename = photoFilename {
+            self.photoFilenames = [filename] // 轉換舊格式為新格式
+        } else {
+            self.photoFilenames = []
+        }
+        
         self.photoFilename = photoFilename
         self.amount = amount
         self.unit = unit

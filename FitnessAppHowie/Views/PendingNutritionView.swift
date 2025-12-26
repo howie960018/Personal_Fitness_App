@@ -2,7 +2,7 @@
 //  PendingNutritionView.swift
 //  FitHowie
 //
-//  待補完飲食記錄視圖 - 修正舊資料相容性與手動熱量支援
+//  待補完飲食記錄視圖 - 支援多張照片
 //
 
 import SwiftUI
@@ -12,7 +12,6 @@ struct PendingNutritionView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \NutritionEntry.timestamp, order: .reverse) private var allEntries: [NutritionEntry]
     
-    // 修正：手動過濾待補完的記錄，並處理舊資料 primitiveStatus 可能為 nil 的情況
     private var pendingEntries: [NutritionEntry] {
         allEntries.filter { ($0.primitiveStatus ?? .complete) == .pending }
     }
@@ -29,7 +28,6 @@ struct PendingNutritionView: View {
                 }
             }
             .navigationTitle("待補完記錄")
-            // 使用 item 綁定彈出補完介面
             .sheet(item: $selectedEntry) { entry in
                 CompletePendingEntryView(entry: entry)
             }
@@ -41,7 +39,7 @@ struct PendingNutritionView: View {
             Image(systemName: "checkmark.circle.fill")
                 .font(.system(size: 60))
                 .foregroundStyle(.green)
-            Text("太棒了！")
+            Text("太棒了!")
                 .font(.title2)
                 .bold()
             Text("所有記錄都已補完")
@@ -77,33 +75,65 @@ struct PendingNutritionView: View {
     }
     
     private func deleteEntry(_ entry: NutritionEntry) {
-        if let filename = entry.photoFilename,
-           let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {
-            let filePath = documentsPath.appendingPathComponent(filename).path
-            try? FileManager.default.removeItem(atPath: filePath)
+        if let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {
+            for filename in entry.photoFilenames {
+                let filePath = documentsPath.appendingPathComponent(filename).path
+                try? FileManager.default.removeItem(atPath: filePath)
+            }
+            
+            if let oldFilename = entry.photoFilename, !entry.photoFilenames.contains(oldFilename) {
+                let filePath = documentsPath.appendingPathComponent(oldFilename).path
+                try? FileManager.default.removeItem(atPath: filePath)
+            }
         }
         modelContext.delete(entry)
     }
 }
 
+// MARK: - 修改:支援多張照片的待補完記錄行
 struct PendingEntryRow: View {
     let entry: NutritionEntry
     
     var body: some View {
         HStack(spacing: 15) {
-            if let photoPath = entry.photoPath {
-                AsyncImage(url: URL(fileURLWithPath: photoPath)) { image in
-                    image
-                        .resizable()
-                        .scaledToFill()
-                } placeholder: {
-                    Color.gray.opacity(0.3)
+            // 照片顯示區域
+            if !entry.photoURLs.isEmpty {
+                if entry.photoURLs.count == 1 {
+                    AsyncImage(url: entry.photoURLs[0]) { image in
+                        image
+                            .resizable()
+                            .scaledToFill()
+                    } placeholder: {
+                        Color.gray.opacity(0.3)
+                    }
+                    .frame(width: 80, height: 80)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                } else {
+                    // 多張照片:顯示網格縮圖
+                    ZStack(alignment: .bottomTrailing) {
+                        AsyncImage(url: entry.photoURLs[0]) { image in
+                            image
+                                .resizable()
+                                .scaledToFill()
+                        } placeholder: {
+                            Color.gray.opacity(0.3)
+                        }
+                        .frame(width: 80, height: 80)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        
+                        Text("\(entry.photoURLs.count) 張")
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 3)
+                            .background(Color.black.opacity(0.7))
+                            .clipShape(Capsule())
+                            .padding(4)
+                    }
                 }
-                .frame(width: 80, height: 80)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
             } else {
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(Color.gray.opacity(0.3) )
+                    .fill(Color.gray.opacity(0.3))
                     .frame(width: 80, height: 80)
                     .overlay {
                         Image(systemName: "photo")
@@ -115,7 +145,6 @@ struct PendingEntryRow: View {
                 HStack {
                     Text(entry.mealType)
                         .font(.headline)
-                        // MARK: - 修改：改為 primary (深色模式下為白色)
                         .foregroundStyle(.primary)
                     
                     Spacer()
@@ -129,9 +158,16 @@ struct PendingEntryRow: View {
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                 
-                Text("點擊補完份量資訊")
-                    .font(.caption)
-                    .foregroundStyle(.blue)
+                // 顯示照片數量提示
+                if entry.photoURLs.count > 1 {
+                    Text("包含 \(entry.photoURLs.count) 張照片")
+                        .font(.caption)
+                        .foregroundStyle(.blue)
+                } else {
+                    Text("點擊補完份量資訊")
+                        .font(.caption)
+                        .foregroundStyle(.blue)
+                }
             }
         }
         .padding(.vertical, 4)
@@ -151,16 +187,16 @@ struct CompletePendingEntryView: View {
     @State private var vegPortions: Double = 1.0
     @State private var fatPortions: Double = 0.5
     @State private var note: String
-    
-    // MARK: - 新增：暫存熱量變數
     @State private var manualCalories: Double = 0.0
+    
+    // 用於照片輪播
+    @State private var currentPhotoIndex = 0
     
     init(entry: NutritionEntry) {
         self.entry = entry
         _description = State(initialValue: entry.entryDescription == "待補完" ? "" : entry.entryDescription)
         _note = State(initialValue: entry.note ?? "")
         
-        // 讀取既有的份量資訊（如果有）
         if let protein = entry.proteinPortions {
             _proteinPortions = State(initialValue: protein)
         }
@@ -174,25 +210,41 @@ struct CompletePendingEntryView: View {
             _fatPortions = State(initialValue: fat)
         }
         
-        // 初始化熱量（如果之前沒設定過，預設為0讓它自動算）
         _manualCalories = State(initialValue: entry.manualCalories ?? 0.0)
     }
     
     var body: some View {
         NavigationStack {
             Form {
-                if let photoPath = entry.photoPath {
+                // MARK: - 修改:支援多張照片輪播
+                if !entry.photoURLs.isEmpty {
                     Section {
-                        AsyncImage(url: URL(fileURLWithPath: photoPath)) { image in
-                            image
-                                .resizable()
-                                .scaledToFit()
-                        } placeholder: {
-                            ProgressView()
+                        TabView(selection: $currentPhotoIndex) {
+                            ForEach(Array(entry.photoURLs.enumerated()), id: \.offset) { index, url in
+                                AsyncImage(url: url) { image in
+                                    image
+                                        .resizable()
+                                        .scaledToFit()
+                                } placeholder: {
+                                    ProgressView()
+                                }
+                                .tag(index)
+                            }
                         }
-                        .frame(maxWidth: .infinity)
                         .frame(height: 250)
+                        .tabViewStyle(.page)
+                        .indexViewStyle(.page(backgroundDisplayMode: .always))
                         .clipShape(RoundedRectangle(cornerRadius: 12))
+                        
+                        if entry.photoURLs.count > 1 {
+                            HStack {
+                                Spacer()
+                                Text("\(currentPhotoIndex + 1) / \(entry.photoURLs.count)")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                Spacer()
+                            }
+                        }
                     }
                 }
                 
@@ -213,7 +265,7 @@ struct CompletePendingEntryView: View {
                 }
                 
                 Section("食物描述") {
-                    TextField("例如：滷肉飯", text: $description)
+                    TextField("例如:滷肉飯", text: $description)
                 }
                 
                 Section {
@@ -222,7 +274,7 @@ struct CompletePendingEntryView: View {
                         carbPortions: $carbPortions,
                         vegPortions: $vegPortions,
                         fatPortions: $fatPortions,
-                        calories: $manualCalories // 傳入綁定
+                        calories: $manualCalories
                     )
                 }
                 
@@ -256,11 +308,7 @@ struct CompletePendingEntryView: View {
         entry.vegPortions = vegPortions
         entry.fatPortions = fatPortions
         entry.note = note.isEmpty ? nil : note
-        
-        // MARK: - 寫入熱量
         entry.manualCalories = manualCalories
-        
-        // 修正：透過 status 計算屬性更新 primitiveStatus 並設為 complete
         entry.status = .complete
         entry.unit = .handPortion
         

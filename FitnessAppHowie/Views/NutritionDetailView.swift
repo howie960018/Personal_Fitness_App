@@ -2,7 +2,7 @@
 //  NutritionDetailView.swift
 //  FitHowie
 //
-//  飲食詳情視圖 - 支援手掌法則與精確熱量計算顯示
+//  飲食詳情視圖 - 支援多張照片輪播
 //
 
 import SwiftUI
@@ -11,22 +11,46 @@ import SwiftData
 struct NutritionDetailView: View {
     let entry: NutritionEntry
     @State private var showingEditSheet = false
+    @State private var currentPhotoIndex = 0
     
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                // 1. 食物照片
-                if let photoPath = entry.photoPath {
-                    AsyncImage(url: URL(fileURLWithPath: photoPath)) { image in
-                        image
-                            .resizable()
-                            .scaledToFit()
-                    } placeholder: {
-                        ProgressView()
+                // MARK: - 修改：多張照片輪播
+                if !entry.photoURLs.isEmpty {
+                    TabView(selection: $currentPhotoIndex) {
+                        ForEach(Array(entry.photoURLs.enumerated()), id: \.offset) { index, url in
+                            AsyncImage(url: url) { image in
+                                image
+                                    .resizable()
+                                    .scaledToFit()
+                            } placeholder: {
+                                ProgressView()
+                            }
+                            .tag(index)
+                        }
                     }
-                    .frame(maxWidth: .infinity)
+                    .frame(height: 300)
+                    .tabViewStyle(.page)
+                    .indexViewStyle(.page(backgroundDisplayMode: .always))
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                     .shadow(radius: 2)
+                    
+                    // 照片計數器
+                    if entry.photoURLs.count > 1 {
+                        HStack {
+                            Spacer()
+                            Text("\(currentPhotoIndex + 1) / \(entry.photoURLs.count)")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 6)
+                                .background(Color(.systemBackground).opacity(0.8))
+                                .clipShape(Capsule())
+                            Spacer()
+                        }
+                        .offset(y: -20)
+                    }
                 }
                 
                 // 2. 核心資訊卡片
@@ -39,7 +63,7 @@ struct NutritionDetailView: View {
                     
                     // 3. 份量與熱量顯示邏輯
                     if entry.isHandPortionMode {
-                        // MARK: - A. 手掌法則模式
+                        // A. 手掌法則模式
                         VStack(alignment: .leading, spacing: 12) {
                             Text("份量估算 (手掌法則)")
                                 .font(.caption)
@@ -73,11 +97,10 @@ struct NutritionDetailView: View {
                             .padding(.top, 5)
                         }
                     } else {
-                        // MARK: - B. 精確計算模式 (單位熱量 x 份數)
+                        // B. 精確計算模式
                         VStack(alignment: .leading, spacing: 12) {
                             DetailRow(label: "份量", value: String(format: "%.1f %@", entry.amount, entry.unit.rawValue))
                             
-                            // 顯示熱量計算公式
                             if let totalCals = entry.manualCalories, entry.amount > 0 {
                                 Divider()
                                 
@@ -86,11 +109,9 @@ struct NutritionDetailView: View {
                                         .font(.caption)
                                         .foregroundStyle(.secondary)
                                     
-                                    // 反推單位熱量
                                     let unitCals = totalCals / entry.amount
                                     
                                     HStack(alignment: .firstTextBaseline, spacing: 4) {
-                                        // 單位熱量
                                         Text(String(format: "%.0f", unitCals))
                                             .font(.body)
                                             .monospacedDigit()
@@ -99,24 +120,20 @@ struct NutritionDetailView: View {
                                             .font(.caption)
                                             .foregroundStyle(.secondary)
                                         
-                                        // 乘號
                                         Text("×")
                                             .font(.caption)
                                             .foregroundStyle(.secondary)
                                             .padding(.horizontal, 2)
                                         
-                                        // 份數
-                                        Text(String(format: "%g", entry.amount)) // %g 自動去除多餘的0
+                                        Text(String(format: "%g", entry.amount))
                                             .font(.body)
                                             .monospacedDigit()
                                         
-                                        // 等號
                                         Text("=")
                                             .font(.body)
                                             .foregroundStyle(.secondary)
                                             .padding(.horizontal, 2)
                                         
-                                        // 總熱量
                                         Text("\(Int(totalCals))")
                                             .font(.title3)
                                             .bold()
@@ -129,7 +146,6 @@ struct NutritionDetailView: View {
                                     }
                                 }
                             } else {
-                                // 舊資料或無熱量時的 fallback
                                 DetailRow(label: "估算熱量", value: "\(Int(entry.estimatedCalories)) kcal")
                             }
                         }
@@ -157,7 +173,6 @@ struct NutritionDetailView: View {
         .navigationTitle("飲食詳情")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            // 右上角編輯按鈕
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
                     showingEditSheet = true
@@ -166,7 +181,6 @@ struct NutritionDetailView: View {
                 }
             }
         }
-        // 彈出編輯頁面
         .sheet(isPresented: $showingEditSheet) {
             EditNutritionEntryView(entry: entry)
         }
@@ -191,7 +205,6 @@ struct DetailRow: View {
     }
 }
 
-/// 營養素小方塊 (用於詳情頁)
 struct MacroDetailIcon: View {
     let emoji: String
     let label: String
@@ -214,21 +227,4 @@ struct MacroDetailIcon: View {
         .background(Color(.systemGray6))
         .cornerRadius(8)
     }
-}
-
-// MARK: - Preview
-#Preview {
-    let entry = NutritionEntry(
-        mealType: "午餐",
-        entryDescription: "茶葉蛋",
-        amount: 2,
-        unit: .serving,
-        manualCalories: 140, // 模擬：70kcal * 2 = 140kcal
-        note: "補充蛋白質"
-    )
-    
-    return NavigationStack {
-        NutritionDetailView(entry: entry)
-    }
-    .modelContainer(for: NutritionEntry.self, inMemory: true)
 }

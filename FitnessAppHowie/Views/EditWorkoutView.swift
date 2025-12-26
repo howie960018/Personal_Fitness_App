@@ -2,7 +2,7 @@
 //  EditWorkoutView.swift
 //  FitHowie
 //
-//  編輯訓練視圖 - 支援拖曳排序
+//  編輯訓練視圖 - 支援多媒體編輯
 //
 
 import SwiftUI
@@ -59,7 +59,6 @@ struct EditWorkoutView: View {
                 
                 if selectedType == .anaerobic {
                     Section {
-                        // MARK: - 修改 1: 使用 $exercises 遍歷
                         ForEach($exercises) { $exerciseData in
                             NavigationLink {
                                 ExerciseDetailEditor(exercise: $exerciseData)
@@ -69,9 +68,15 @@ struct EditWorkoutView: View {
                                         Text(exerciseData.exerciseName.isEmpty ? "未命名動作" : exerciseData.exerciseName)
                                             .font(.headline)
                                         Spacer()
-                                        if exerciseData.mediaData != nil || exerciseData.existingFilename != nil {
-                                            Image(systemName: (exerciseData.mediaType ?? "photo") == "video" ? "video.fill" : "photo.fill")
-                                                .foregroundStyle(.blue)
+                                        // 顯示媒體數量
+                                        if exerciseData.hasAnyMedia {
+                                            HStack(spacing: 4) {
+                                                Image(systemName: "photo.fill")
+                                                    .foregroundStyle(.blue)
+                                                Text("\(exerciseData.totalMediaCount)")
+                                                    .font(.caption)
+                                                    .foregroundStyle(.blue)
+                                            }
                                         }
                                     }
                                     
@@ -99,7 +104,6 @@ struct EditWorkoutView: View {
                         .onDelete { indexSet in
                             exercises.remove(atOffsets: indexSet)
                         }
-                        // MARK: - 修改 2: 加入 .onMove
                         .onMove { from, to in
                             exercises.move(fromOffsets: from, toOffset: to)
                         }
@@ -135,7 +139,6 @@ struct EditWorkoutView: View {
                         dismiss()
                     }
                 }
-                // 加入 EditButton 讓使用者能明確進入排序模式
                 ToolbarItem(placement: .topBarLeading) {
                     EditButton()
                 }
@@ -163,91 +166,104 @@ struct EditWorkoutView: View {
         return true
     }
     
+    // MARK: - 載入既有資料 (支援多媒體)
     private func loadExistingData() {
-            if selectedType == .anaerobic {
-                var exerciseDataArray: [ExerciseSetData] = []
+        if selectedType == .anaerobic {
+            var exerciseDataArray: [ExerciseSetData] = []
+            
+            for exercise in workout.sortedExercises {
+                var exerciseData = ExerciseSetData(
+                    exerciseName: exercise.exerciseName,
+                    exerciseType: exercise.exerciseType,
+                    muscleGroup: exercise.muscleGroup,
+                    note: exercise.note
+                )
                 
-                // MARK: - 修改：讀取時使用 sortedExercises 確保順序正確
-                for exercise in workout.sortedExercises {
-                    var exerciseData = ExerciseSetData(
-                        exerciseName: exercise.exerciseName,
-                        exerciseType: exercise.exerciseType,
-                        muscleGroup: exercise.muscleGroup,
-                        note: exercise.note,
-                        mediaType: exercise.mediaType,
-                        existingFilename: exercise.mediaFilename
-                    )
-                    
-                    // ... (處理 sets 的邏輯不變) ...
-                    
-                    var setGroups: [String: (weight: Double, reps: Int, count: Int)] = [:]
-                    for set in exercise.sets {
-                       let key = "\(set.weight)-\(set.reps)"
-                        if var existing = setGroups[key] {
-                            existing.count += 1
-                            setGroups[key] = existing
-                        } else {
-                            setGroups[key] = (weight: set.weight, reps: set.reps, count: 1)
-                        }
+                // MARK: - 載入多個媒體檔案
+                exerciseData.existingFilenames = exercise.mediaFilenames
+                exerciseData.existingTypes = exercise.mediaTypes
+                
+                // 處理組數
+                var setGroups: [String: (weight: Double, reps: Int, count: Int)] = [:]
+                for set in exercise.sets {
+                   let key = "\(set.weight)-\(set.reps)"
+                    if var existing = setGroups[key] {
+                        existing.count += 1
+                        setGroups[key] = existing
+                    } else {
+                        setGroups[key] = (weight: set.weight, reps: set.reps, count: 1)
                     }
-                    exerciseData.sets = setGroups.values.map { group in
-                        SetData(weight: group.weight, reps: group.reps, numberOfSets: group.count)
-                    }
-                    
-                    exerciseDataArray.append(exerciseData)
                 }
-                exercises = exerciseDataArray
+                exerciseData.sets = setGroups.values.map { group in
+                    SetData(weight: group.weight, reps: group.reps, numberOfSets: group.count)
+                }
+                
+                exerciseDataArray.append(exerciseData)
             }
+            exercises = exerciseDataArray
         }
+    }
     
+    // MARK: - 儲存訓練 (支援多媒體)
     private func saveWorkout() {
-            guard let duration = Int(durationMinutes) else { return }
-            
-            workout.timestamp = date
-            workout.trainingType = selectedType
-            workout.durationMinutes = duration
-            workout.note = note.isEmpty ? nil : note
-            
-            workout.exerciseDetails.removeAll()
-            
-            if selectedType == .anaerobic {
-                // MARK: - 修改：使用 enumerated() 寫入新的順序
-                for (index, exerciseData) in exercises.enumerated() {
-                    var finalFilename = exerciseData.existingFilename
-                    var finalType = exerciseData.mediaType
-                    
-                    if let data = exerciseData.mediaData, let type = exerciseData.mediaType {
-                        MediaHelper.deleteMedia(filename: exerciseData.existingFilename)
-                        let ext = (type == "video") ? "mov" : "jpg"
-                        finalFilename = MediaHelper.saveMedia(data: data, extensionName: ext)
-                        finalType = type
+        guard let duration = Int(durationMinutes) else { return }
+        
+        workout.timestamp = date
+        workout.trainingType = selectedType
+        workout.durationMinutes = duration
+        workout.note = note.isEmpty ? nil : note
+        
+        workout.exerciseDetails.removeAll()
+        
+        if selectedType == .anaerobic {
+            for (index, exerciseData) in exercises.enumerated() {
+                
+                // MARK: - 處理多媒體：刪除被移除的檔案
+                let oldFilenames = workout.sortedExercises.count > index ?
+                    workout.sortedExercises[index].mediaFilenames : []
+                
+                for oldFilename in oldFilenames {
+                    if !exerciseData.existingFilenames.contains(oldFilename) {
+                        MediaHelper.deleteMedia(filename: oldFilename)
                     }
-                    else if exerciseData.existingFilename == nil && exerciseData.mediaData == nil {
-                         // 處理移除
-                    }
-                    
-                    var allSets: [SetEntry] = []
-                    for setData in exerciseData.sets {
-                        let weightInKg = exerciseData.weightUnit.toKg(setData.weight)
-                        for _ in 0..<setData.numberOfSets {
-                            allSets.append(SetEntry(weight: weightInKg, reps: setData.reps))
-                        }
-                    }
-                    
-                    let exercise = ExerciseSet(
-                        exerciseName: exerciseData.exerciseName,
-                        exerciseType: exerciseData.exerciseType,
-                        muscleGroup: exerciseData.muscleGroup,
-                        sets: allSets,
-                        note: exerciseData.note?.isEmpty == false ? exerciseData.note : nil,
-                        mediaFilename: finalFilename,
-                        mediaType: finalType,
-                        orderIndex: index // 👈 關鍵：更新為拖曳後的新順序
-                    )
-                    workout.exerciseDetails.append(exercise)
                 }
+                
+                // MARK: - 儲存新選擇的媒體
+                var savedFilenames: [String] = exerciseData.existingFilenames
+                var savedTypes: [String] = exerciseData.existingTypes
+                
+                for mediaData in exerciseData.mediaDataArray {
+                    let ext = (mediaData.type == "video") ? "mov" : "jpg"
+                    if let filename = MediaHelper.saveMedia(data: mediaData.data, extensionName: ext) {
+                        savedFilenames.append(filename)
+                        savedTypes.append(mediaData.type)
+                    }
+                }
+                
+                // 轉換組數
+                var allSets: [SetEntry] = []
+                for setData in exerciseData.sets {
+                    let weightInKg = exerciseData.weightUnit.toKg(setData.weight)
+                    for _ in 0..<setData.numberOfSets {
+                        allSets.append(SetEntry(weight: weightInKg, reps: setData.reps))
+                    }
+                }
+                
+                // 建立 ExerciseSet (使用多媒體陣列)
+                let exercise = ExerciseSet(
+                    exerciseName: exerciseData.exerciseName,
+                    exerciseType: exerciseData.exerciseType,
+                    muscleGroup: exerciseData.muscleGroup,
+                    sets: allSets,
+                    note: exerciseData.note?.isEmpty == false ? exerciseData.note : nil,
+                    mediaFilenames: savedFilenames,  // 合併既有和新增的媒體
+                    mediaTypes: savedTypes,          // 合併既有和新增的類型
+                    orderIndex: index
+                )
+                workout.exerciseDetails.append(exercise)
             }
-            
-            dismiss()
         }
+        
+        dismiss()
+    }
 }

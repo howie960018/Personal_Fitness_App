@@ -2,7 +2,7 @@
 //  WorkoutDetailView.swift
 //  FitHowie
 //
-//  訓練詳情視圖 - 支援「每個動作」顯示獨立影片與播放控制
+//  訓練詳情視圖 - 支援多媒體輪播
 //
 
 import SwiftUI
@@ -12,9 +12,7 @@ import AVKit
 struct WorkoutDetailView: View {
     let workout: WorkoutRecord
     
-    // 環境變數：用於關閉視窗
     @Environment(\.dismiss) private var dismiss
-    
     @State private var showingEditSheet = false
     
     var body: some View {
@@ -50,7 +48,7 @@ struct WorkoutDetailView: View {
                  }
             }
             
-            // 2. 動作詳情 (含影片)
+            // 2. 動作詳情 (含多媒體)
             if workout.trainingType == .anaerobic && !workout.exerciseDetails.isEmpty {
                  Section("動作詳情") {
                      ForEach(workout.sortedExercises, id: \.id) { exercise in
@@ -60,12 +58,20 @@ struct WorkoutDetailView: View {
                              Text(exercise.exerciseName)
                                  .font(.headline)
                              
-                             // B. 動作影像 (若有則顯示)
-                             if let mediaURL = exercise.mediaURL {
-                                 ExerciseMediaView(url: mediaURL, type: exercise.mediaType ?? "photo")
-                                     .frame(height: 250) // 設定影片高度
-                                     .cornerRadius(12)
-                                     .padding(.vertical, 4)
+                             // MARK: - B. 多媒體輪播顯示
+                             if !exercise.mediaItems.isEmpty {
+                                 if exercise.mediaItems.count == 1 {
+                                     // 單個媒體：直接顯示
+                                     SingleMediaView(mediaItem: exercise.mediaItems[0])
+                                         .frame(height: 250)
+                                         .cornerRadius(12)
+                                         .padding(.vertical, 4)
+                                 } else {
+                                     // 多個媒體：使用 TabView 輪播
+                                     MultipleMediaView(mediaItems: exercise.mediaItems)
+                                         .frame(height: 280)
+                                         .padding(.vertical, 4)
+                                 }
                              }
                              
                              // C. 部位與類型標籤
@@ -160,7 +166,6 @@ struct WorkoutDetailView: View {
         .navigationTitle("訓練詳情")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            // 左上角返回按鈕
             ToolbarItem(placement: .topBarLeading) {
                 Button {
                     dismiss()
@@ -172,7 +177,6 @@ struct WorkoutDetailView: View {
                 }
             }
             
-            // 右上角編輯按鈕
             ToolbarItem(placement: .topBarTrailing) {
                 Button("編輯") {
                     showingEditSheet = true
@@ -185,22 +189,19 @@ struct WorkoutDetailView: View {
     }
 }
 
-// MARK: - 獨立的動作媒體播放組件 (含播放控制)
-struct ExerciseMediaView: View {
-    let url: URL
-    let type: String
-    
+// MARK: - 單個媒體顯示組件
+
+struct SingleMediaView: View {
+    let mediaItem: ExerciseSet.MediaItem
     @State private var player: AVPlayer?
     @State private var isPlaying = false
     
     var body: some View {
         Group {
-            if type == "video" {
+            if mediaItem.type == "video", let url = mediaItem.url {
                 ZStack(alignment: .center) {
-                    // 影片播放器
                     VideoPlayer(player: player)
                     
-                    // 播放/暫停按鈕疊層
                     Button {
                         togglePlayPause()
                     } label: {
@@ -209,20 +210,19 @@ struct ExerciseMediaView: View {
                             .foregroundStyle(.white.opacity(0.8))
                             .shadow(radius: 4)
                     }
-                    .opacity(isPlaying ? 0.0 : 1.0) // 播放時隱藏按鈕，讓畫面更乾淨
+                    .opacity(isPlaying ? 0.0 : 1.0)
                     .animation(.easeInOut(duration: 0.2), value: isPlaying)
                 }
-                .task { // 進入畫面時載入
+                .task {
                     if player == nil {
                         player = AVPlayer(url: url)
                     }
                 }
-                .onDisappear { // 離開畫面時暫停
+                .onDisappear {
                     player?.pause()
                     isPlaying = false
                 }
-            } else {
-                // 圖片顯示
+            } else if let url = mediaItem.url {
                 AsyncImage(url: url) { img in
                     img.resizable().scaledToFit()
                 } placeholder: {
@@ -235,7 +235,6 @@ struct ExerciseMediaView: View {
         }
     }
     
-    // 播放控制邏輯
     private func togglePlayPause() {
         guard let player = player else { return }
         
@@ -243,12 +242,50 @@ struct ExerciseMediaView: View {
             player.pause()
             isPlaying = false
         } else {
-            // 如果影片已經播完，重頭開始播
             if let currentItem = player.currentItem, currentItem.currentTime() >= currentItem.duration {
                 player.seek(to: .zero)
             }
             player.play()
             isPlaying = true
+        }
+    }
+}
+
+// MARK: - 多媒體輪播組件
+
+struct MultipleMediaView: View {
+    let mediaItems: [ExerciseSet.MediaItem]
+    @State private var currentIndex = 0
+    
+    var body: some View {
+        VStack(spacing: 8) {
+            TabView(selection: $currentIndex) {
+                ForEach(Array(mediaItems.enumerated()), id: \.element.id) { index, item in
+                    SingleMediaView(mediaItem: item)
+                        .tag(index)
+                }
+            }
+            .tabViewStyle(.page)
+            .indexViewStyle(.page(backgroundDisplayMode: .always))
+            .cornerRadius(12)
+            
+            // 媒體計數器與類型標示
+            HStack {
+                Spacer()
+                HStack(spacing: 4) {
+                    Image(systemName: mediaItems[currentIndex].type == "video" ? "video.fill" : "photo.fill")
+                        .font(.caption2)
+                    Text("\(currentIndex + 1) / \(mediaItems.count)")
+                        .font(.caption)
+                }
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(Color(.systemBackground).opacity(0.8))
+                .clipShape(Capsule())
+                Spacer()
+            }
+            .offset(y: -20)
         }
     }
 }

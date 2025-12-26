@@ -32,6 +32,7 @@
 		95BF59002EF3DBF500DB012F /* MediaHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95BF58FF2EF3DBF500DB012F /* MediaHelper.swift */; };
 		95BF59022EF3F44F00DB012F /* DailyHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95BF59012EF3F44F00DB012F /* DailyHistoryView.swift */; };
 		95BF59062EF4246200DB012F /* AddNutritionEntryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95BF59052EF4246200DB012F /* AddNutritionEntryView.swift */; };
+		95BF59082EFE6CED00DB012F /* ExerciseDetailEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95BF59072EFE6CED00DB012F /* ExerciseDetailEditor.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -62,6 +63,7 @@
 		95BF58FF2EF3DBF500DB012F /* MediaHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaHelper.swift; sourceTree = "<group>"; };
 		95BF59012EF3F44F00DB012F /* DailyHistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyHistoryView.swift; sourceTree = "<group>"; };
 		95BF59052EF4246200DB012F /* AddNutritionEntryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddNutritionEntryView.swift; sourceTree = "<group>"; };
+		95BF59072EFE6CED00DB012F /* ExerciseDetailEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerciseDetailEditor.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -144,6 +146,7 @@
 				95BF58FD2EF3B01200DB012F /* PendingNutritionView.swift */,
 				95BF59012EF3F44F00DB012F /* DailyHistoryView.swift */,
 				95BF59052EF4246200DB012F /* AddNutritionEntryView.swift */,
+				95BF59072EFE6CED00DB012F /* ExerciseDetailEditor.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -225,6 +228,7 @@
 				955902B92EF2F2C600082E39 /* WorkoutDetailView.swift in Sources */,
 				955902912EF2F16D00082E39 /* FitnessAppHowieApp.swift in Sources */,
 				955902AD2EF2F2A800082E39 /* SetEntry.swift in Sources */,
+				95BF59082EFE6CED00DB012F /* ExerciseDetailEditor.swift in Sources */,
 				95BF59022EF3F44F00DB012F /* DailyHistoryView.swift in Sources */,
 				955902A92EF2F2A800082E39 /* WorkoutRecord.swift in Sources */,
 				955902AB2EF2F2A800082E39 /* DailyLog.swift in Sources */,

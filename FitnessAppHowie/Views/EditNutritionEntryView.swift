@@ -12,9 +12,11 @@ struct EditNutritionEntryView: View {
     @State private var mealType: String
     @State private var description: String
     @State private var note: String
-    @State private var selectedPhoto: PhotosPickerItem?
-    @State private var photoData: Data?
-    @State private var existingPhotoFilename: String?
+    
+    // MARK: - 修改:支援多張照片
+    @State private var selectedPhotos: [PhotosPickerItem] = []
+    @State private var newPhotoDataArray: [Data] = [] // 新選擇的照片
+    @State private var existingPhotoFilenames: [String] // 既有的照片檔名
     
     @State private var useHandPortion: Bool
     
@@ -23,10 +25,7 @@ struct EditNutritionEntryView: View {
     @State private var vegPortions: Double
     @State private var fatPortions: Double
     
-    // 手掌模式用的總熱量
     @State private var manualCalories: Double = 0.0
-    
-    // MARK: - 新增：普通模式用的單位熱量
     @State private var caloriesPerUnit: String = ""
     
     @State private var amount: String
@@ -41,7 +40,9 @@ struct EditNutritionEntryView: View {
         _mealType = State(initialValue: entry.mealType)
         _description = State(initialValue: entry.entryDescription)
         _note = State(initialValue: entry.note ?? "")
-        _existingPhotoFilename = State(initialValue: entry.photoFilename)
+        
+        // 載入既有照片
+        _existingPhotoFilenames = State(initialValue: entry.photoFilenames)
         
         let isHandMode = entry.isHandPortionMode
         _useHandPortion = State(initialValue: isHandMode)
@@ -51,20 +52,15 @@ struct EditNutritionEntryView: View {
         _vegPortions = State(initialValue: entry.vegPortions ?? 1.0)
         _fatPortions = State(initialValue: entry.fatPortions ?? 0.5)
         
-        // 初始化總熱量
         let totalCals = entry.manualCalories ?? entry.estimatedCalories
         _manualCalories = State(initialValue: totalCals)
         
-        // 傳統模式數據
         let amt = entry.amount
         _amount = State(initialValue: String(amt))
         _selectedUnit = State(initialValue: entry.unit)
         
-        // MARK: - 初始化單位熱量
-        // 如果不是手掌模式，試著反推單位熱量 (總熱量 / 份數)
         if !isHandMode && amt > 0 {
             let perUnit = totalCals / amt
-            // 如果是整數就顯示整數，不然顯示小數
             if perUnit.truncatingRemainder(dividingBy: 1) == 0 {
                 _caloriesPerUnit = State(initialValue: String(format: "%.0f", perUnit))
             } else {
@@ -92,44 +88,100 @@ struct EditNutritionEntryView: View {
                     TextField("飲食描述", text: $description)
                 }
                 
-                Section("照片") {
-                    PhotosPicker(selection: $selectedPhoto, matching: .images) {
-                        if let photoData, let uiImage = UIImage(data: photoData) {
-                            Image(uiImage: uiImage)
-                                .resizable()
-                                .scaledToFit()
-                                .frame(height: 200)
-                                .clipShape(RoundedRectangle(cornerRadius: 12))
-                        } else if let existingPhotoFilename,
-                                  let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {
-                            let photoPath = documentsPath.appendingPathComponent(existingPhotoFilename).path
-                            if let uiImage = UIImage(contentsOfFile: photoPath) {
-                                Image(uiImage: uiImage)
-                                    .resizable()
-                                    .scaledToFit()
-                                    .frame(height: 200)
-                                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                            }
-                        } else {
-                            Label("選擇照片", systemImage: "photo.on.rectangle")
-                        }
-                    }
-                    .onChange(of: selectedPhoto) { _, newValue in
-                        Task {
-                            if let data = try? await newValue?.loadTransferable(type: Data.self) {
-                                photoData = data
+                // MARK: - 修改:支援多張照片編輯
+                Section("照片管理 (可選多張)") {
+                    // 顯示既有照片
+                    if !existingPhotoFilenames.isEmpty {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("目前照片 (\(existingPhotoFilenames.count) 張)")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 10) {
+                                    ForEach(Array(existingPhotoFilenames.enumerated()), id: \.offset) { index, filename in
+                                        if let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {
+                                            let photoPath = documentsPath.appendingPathComponent(filename).path
+                                            if let uiImage = UIImage(contentsOfFile: photoPath) {
+                                                ZStack(alignment: .topTrailing) {
+                                                    Image(uiImage: uiImage)
+                                                        .resizable()
+                                                        .scaledToFill()
+                                                        .frame(width: 120, height: 120)
+                                                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                                                    
+                                                    Button {
+                                                        existingPhotoFilenames.remove(at: index)
+                                                    } label: {
+                                                        Image(systemName: "xmark.circle.fill")
+                                                            .foregroundStyle(.white)
+                                                            .background(Circle().fill(Color.red))
+                                                    }
+                                                    .padding(4)
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
                     
-                    if existingPhotoFilename != nil || photoData != nil {
-                        Button(role: .destructive) {
-                            existingPhotoFilename = nil
-                            photoData = nil
-                            selectedPhoto = nil
-                        } label: {
-                            Label("移除照片", systemImage: "trash")
+                    // 新增照片
+                    PhotosPicker(selection: $selectedPhotos, maxSelectionCount: 10, matching: .images) {
+                        Label(newPhotoDataArray.isEmpty ? "新增照片" : "已選擇 \(newPhotoDataArray.count) 張新照片",
+                              systemImage: "photo.badge.plus")
+                    }
+                    .onChange(of: selectedPhotos) { _, newPhotos in
+                        Task {
+                            newPhotoDataArray.removeAll()
+                            for photo in newPhotos {
+                                if let data = try? await photo.loadTransferable(type: Data.self) {
+                                    newPhotoDataArray.append(data)
+                                }
+                            }
                         }
+                    }
+                    
+                    // 顯示新選照片
+                    if !newPhotoDataArray.isEmpty {
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 10) {
+                                ForEach(Array(newPhotoDataArray.enumerated()), id: \.offset) { index, data in
+                                    if let uiImage = UIImage(data: data) {
+                                        ZStack(alignment: .topTrailing) {
+                                            Image(uiImage: uiImage)
+                                                .resizable()
+                                                .scaledToFill()
+                                                .frame(width: 120, height: 120)
+                                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                                            
+                                            Button {
+                                                newPhotoDataArray.remove(at: index)
+                                                selectedPhotos.remove(at: index)
+                                            } label: {
+                                                Image(systemName: "xmark.circle.fill")
+                                                    .foregroundStyle(.white)
+                                                    .background(Circle().fill(Color.red))
+                                            }
+                                            .padding(4)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        
+                        Button("清除新選照片", role: .destructive) {
+                            newPhotoDataArray.removeAll()
+                            selectedPhotos.removeAll()
+                        }
+                    }
+                    
+                    if !existingPhotoFilenames.isEmpty || !newPhotoDataArray.isEmpty {
+                        let totalCount = existingPhotoFilenames.count + newPhotoDataArray.count
+                        Text("總計將有 \(totalCount) 張照片")
+                            .font(.caption)
+                            .foregroundStyle(.blue)
                     }
                 }
                 
@@ -148,7 +200,6 @@ struct EditNutritionEntryView: View {
                         )
                     }
                 } else {
-                    // MARK: - 修改：卡路里 x 份數 輸入
                     Section("精確計算") {
                         HStack {
                             Text("單位熱量")
@@ -177,7 +228,6 @@ struct EditNutritionEntryView: View {
                             .labelsHidden()
                         }
                         
-                        // 計算並顯示結果
                         HStack {
                             Text("總熱量")
                                 .bold()
@@ -227,34 +277,38 @@ struct EditNutritionEntryView: View {
         }
     }
     
+    // MARK: - 修改:儲存多張照片
     private func saveEntry() {
         entry.timestamp = date
         entry.mealType = mealType
         entry.entryDescription = description
         entry.note = note.isEmpty ? nil : note
         
-        if let photoData {
-            if let oldFilename = entry.photoFilename,
-               let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {
+        // 處理照片:刪除舊的 + 新增新的
+        guard let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else { return }
+        
+        // 刪除被移除的舊照片檔案
+        for oldFilename in entry.photoFilenames {
+            if !existingPhotoFilenames.contains(oldFilename) {
                 let oldPath = documentsPath.appendingPathComponent(oldFilename).path
                 try? FileManager.default.removeItem(atPath: oldPath)
             }
-            
-            let filename = "\(UUID().uuidString).jpg"
-            if let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {
-                let fileURL = documentsPath.appendingPathComponent(filename)
-                try? photoData.write(to: fileURL)
-                entry.photoFilename = filename
-            }
-        } else if existingPhotoFilename == nil && entry.photoFilename != nil {
-            if let oldFilename = entry.photoFilename,
-               let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {
-                let oldPath = documentsPath.appendingPathComponent(oldFilename).path
-                try? FileManager.default.removeItem(atPath: oldPath)
-            }
-            entry.photoFilename = nil
         }
         
+        // 儲存新照片
+        var newFilenames: [String] = []
+        for data in newPhotoDataArray {
+            let filename = "\(UUID().uuidString).jpg"
+            let fileURL = documentsPath.appendingPathComponent(filename)
+            if (try? data.write(to: fileURL)) != nil {
+                newFilenames.append(filename)
+            }
+        }
+        
+        // 更新照片陣列
+        entry.photoFilenames = existingPhotoFilenames + newFilenames
+        
+        // 更新其他資料
         if useHandPortion {
             entry.unit = .handPortion
             entry.proteinPortions = proteinPortions
@@ -270,8 +324,6 @@ struct EditNutritionEntryView: View {
             entry.carbPortions = nil
             entry.vegPortions = nil
             entry.fatPortions = nil
-            
-            // 儲存計算後的總熱量
             entry.manualCalories = calculateTotalManualCalories()
         }
         
